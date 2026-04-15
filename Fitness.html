@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Pro FINAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body{margin:0;font-family:Poppins;background:#0f172a;color:white;text-align:center}
+header{padding:15px;background:#020617}
+.hero{padding:60px}
+.btn{padding:10px 20px;background:#22c55e;border:none;border-radius:8px;cursor:pointer}
+.tracker{background:#1e293b;padding:20px;border-radius:12px;max-width:450px;margin:auto}
+input,select{padding:10px;border-radius:8px;border:none;margin:5px}
+li{list-style:none;background:#334155;margin:8px;padding:10px;border-radius:8px;cursor:pointer}
+.progress{background:#334155;border-radius:10px;margin:10px}
+.bar{height:10px;background:#22c55e;width:0%}
+.stats{display:flex;justify-content:space-around;font-size:14px}
+.fade{animation:fadeIn 0.5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.bubbles{position:fixed;width:100%;height:100%;z-index:-1}
+.bubbles span{position:absolute;bottom:-50px;background:rgba(34,197,94,0.3);border-radius:50%;animation:rise 10s linear infinite}
+@keyframes rise{0%{transform:translateY(0)}100%{transform:translateY(-100vh)}}
+#exerciseTimer{margin-top:10px;font-weight:600}
+#bmiStatus{font-size:14px;margin-top:5px}
+</style>
+</head>
+
+<body>
+<div class="bubbles" id="bubbles"></div>
+
+<header><h2>Fitness FINAL 💪</h2></header>
+
+<section class="hero">
+<h1>Ultimate Fitness App 🔥</h1>
+<button class="btn" onclick="scrollToTracker()">Start</button>
+</section>
+
+<section id="tracker">
+<div class="tracker">
+
+<select id="mode">
+<option value="loss">Weight Loss</option>
+<option value="muscle">Muscle Gain</option>
+</select>
+
+<select id="day">
+<option value="1">Day 1</option>
+<option value="2">Day 2</option>
+<option value="3">Day 3</option>
+<option value="4">Day 4</option>
+<option value="5">Day 5</option>
+<option value="6">Day 6</option>
+<option value="7">Day 7</option>
+</select>
+
+<button class="btn" onclick="generatePlan()">Start Workout</button>
+
+<h3>XP: <span id="xp">0</span></h3>
+<div class="progress"><div id="bar" class="bar"></div></div>
+
+<div class="stats">
+<div>Level: <span id="level">1</span></div>
+<div>Calories: <span id="cal">0</span></div>
+<div>Water: <span id="water">0</span>L</div>
+<div>Steps: <span id="steps">0</span></div>
+</div>
+
+<ul id="list"></ul>
+<p id="exerciseTimer">Exercise Timer: 0s</p>
+
+<button onclick="addWater()">💧 +250ml</button>
+<button onclick="addSteps()">👣 +500 Steps</button>
+
+<h4>BMI</h4>
+<input id="height" placeholder="Height cm">
+<input id="weight" placeholder="Weight kg">
+<button onclick="calcBMI()">Check</button>
+<p id="bmi"></p>
+<p id="bmiStatus"></p>
+
+<h3>⏱ <span id="time">60</span>s</h3>
+<button onclick="startTimer()">Start</button>
+<button onclick="pauseTimer()">Pause</button>
+
+</div>
+</section>
+
+<script>
+// bubbles
+for(let i=0;i<30;i++){
+ let b=document.createElement('span');
+ b.style.left=Math.random()*100+'%';
+ b.style.width=b.style.height=(10+Math.random()*20)+'px';
+ b.style.animationDuration=(5+Math.random()*5)+'s';
+ document.getElementById('bubbles').appendChild(b);
+}
+
+let xp=0,level=1,cal=0,water=0,steps=0;
+let time=60,timer,running=false;
+let exTimer=0,exInterval;
+
+function scrollToTracker(){document.getElementById('tracker').scrollIntoView({behavior:'smooth'})}
+
+function updateUI(){
+document.getElementById('xp').textContent=xp;
+document.getElementById('level').textContent=level;
+document.getElementById('cal').textContent=cal;
+document.getElementById('water').textContent=water;
+document.getElementById('steps').textContent=steps;
+document.getElementById('bar').style.width=(xp%100)+'%';
+}
+
+const musclePlan=[
+["Bench Press","Incline DB Press","Chest Fly","Push Ups","Triceps Dips"],
+["Squats","Leg Press","Lunges","Leg Curl","Calf Raises"],
+["Rest"],
+["Pull Ups","Barbell Row","Lat Pulldown","Deadlift","Bicep Curl"],
+["Shoulder Press","Lateral Raise","Front Raise","Shrugs","Face Pull"],
+["Plank","Crunches","Leg Raises","Russian Twist","Mountain Climbers"],
+["Rest"]
+];
+
+const lossPlan=[
+["Jumping Jacks","Burpees","Mountain Climbers","High Knees","Skipping"],
+["Squats","Lunges","Jump Squats","Step Ups","Wall Sit"],
+["Plank","Crunches","Leg Raises","Bicycle","Russian Twist"],
+["Burpees","Sprint","Box Jump","Jump Rope","High Knees"],
+["Mountain Climbers","Jump Squats","Burpees","Plank","Skipping"],
+["Jogging","Walking","Stretching","Yoga","Core"],
+["Rest"]
+];
+
+function generatePlan(){
+let mode=document.getElementById('mode').value;
+let day=document.getElementById('day').value;
+let list=document.getElementById('list');
+list.innerHTML='';
+
+let selected=(mode==='loss'?lossPlan:musclePlan)[day-1];
+let plan=mode==='loss'?{sets:3,reps:20}:{sets:4,reps:10};
+
+selected.forEach(ex=>{
+ let li=document.createElement('li');
+ if(ex==='Rest'){
+   li.textContent='😴 Rest Day';
+ }else{
+   li.textContent=ex+" → "+plan.sets+" × "+plan.reps;
+ }
+
+ li.onclick=function(){
+ if(!li.classList.contains('done') && ex!=='Rest'){
+ li.classList.add('done');
+ li.style.textDecoration='line-through';
+ xp+=10;cal+=50;
+ if(xp>=level*100) level++;
+ updateUI();
+ }
+ }
+
+ list.appendChild(li);
+});
+}
+
+// Exercise timer (ADD-ON only)
+document.getElementById('list').addEventListener('click', function(e){
+ if(e.target.tagName==='LI' && !e.target.textContent.includes('Rest')){
+ clearInterval(exInterval);
+ exTimer=0;
+ exInterval=setInterval(()=>{
+ exTimer++;
+ document.getElementById('exerciseTimer').textContent='Exercise Timer: '+exTimer+'s';
+ },1000);
+ }
+});
+
+function addWater(){water+=0.25;updateUI()}
+function addSteps(){steps+=500;updateUI()}
+
+function calcBMI(){
+let h=document.getElementById('height').value/100;
+let w=document.getElementById('weight').value;
+if(!h||!w)return;
+let bmi=(w/(h*h)).toFixed(1);
+document.getElementById('bmi').textContent='BMI: '+bmi;
+let status=document.getElementById('bmiStatus');
+
+if(bmi<18.5){status.textContent='Underweight ⚠️';status.style.color='#facc15'}
+else if(bmi<25){status.textContent='Normal ✅';status.style.color='#22c55e'}
+else if(bmi<30){status.textContent='Overweight ⚠️';status.style.color='#fb923c'}
+else{status.textContent='Obese ❌';status.style.color='#ef4444'}
+}
+
+function startTimer(){
+if(running)return;
+running=true;
+timer=setInterval(()=>{
+if(time>0){time--;document.getElementById('time').textContent=time}
+},1000)}
+
+function pauseTimer(){running=false;clearInterval(timer)}
+</script>
+
+</body>
+</html>
